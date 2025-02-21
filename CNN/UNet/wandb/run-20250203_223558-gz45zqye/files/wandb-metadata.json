@@ -1,0 +1,45 @@
+{
+  "os": "Windows-11-10.0.26100-SP0",
+  "python": "CPython 3.12.8",
+  "startedAt": "2025-02-03T15:35:58.839697Z",
+  "args": [
+    "--amp",
+    "--scale=0.3"
+  ],
+  "program": "D:\\MachineLearning\\Notebook\\6.390_Implement\\UNet\\train.py",
+  "codePath": "UNet\\train.py",
+  "git": {
+    "remote": "https://github.com/tothanhdat2006/6.390_Implement.git",
+    "commit": "bb8c3045664ab10d0ced775ad0f025c680f1d330"
+  },
+  "root": "D:\\MachineLearning\\Notebook\\6.390_Implement\\UNet",
+  "host": "DatLN",
+  "executable": "C:\\Users\\To Thanh Dat\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+  "codePathLocal": "train.py",
+  "cpu_count": 14,
+  "cpu_count_logical": 20,
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "524287995904",
+      "used": "305686364160"
+    }
+  },
+  "memory": {
+    "total": "16849256448"
+  },
+  "cpu": {
+    "count": 14,
+    "countLogical": 20
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 4050 Laptop GPU",
+      "memoryTotal": "6439305216",
+      "cudaCores": 2560,
+      "architecture": "Ada"
+    }
+  ],
+  "cudaVersion": "12.7"
+}

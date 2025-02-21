@@ -1,0 +1,10 @@
+D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py:75: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
+Epoch 1/5:   0%|                                                                                                                                          | 0/29 [00:00<?, ?img/s]
+Traceback (most recent call last):
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py", line 200, in <module>
+    train_model(
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py", line 85, in train_model
+    for batch in train_dataloader():
+                 ^^^^^^^^^^^^^^^^^^
+TypeError: 'DataLoader' object is not callable

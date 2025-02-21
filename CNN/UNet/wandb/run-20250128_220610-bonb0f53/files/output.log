@@ -1,0 +1,81 @@
+D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py:75: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
+Epoch 1/5:   0%|                                                                                                                                          | 0/29 [00:32<?, ?img/s]
+ERROR:root:Detected OutOfMemoryError! Enabling checkpointing to reduce memory usage, but this slows down training. Consider enabling AMP (--amp) for fast and memory efficient training
+Traceback (most recent call last):
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py", line 200, in <module>
+    train_model(
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py", line 98, in train_model
+    masks_pred = model(images)
+                 ^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\unet\unet.py", line 44, in forward
+    c1, c2, c3, c4 = self.contracting_path(c0)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\unet\unet.py", line 32, in contracting_path
+    out4 = self.down4(out3) # 1024 x 28 x 28
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\unet\unet_parts.py", line 30, in forward
+    return self.maxpool_conv(X)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\container.py", line 250, in forward
+    input = module(input)
+            ^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\unet\unet_parts.py", line 19, in forward
+    return self.double_conv(X)
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\container.py", line 250, in forward
+    input = module(input)
+            ^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\modules\batchnorm.py", line 193, in forward
+    return F.batch_norm(
+           ^^^^^^^^^^^^^
+  File "C:\Users\To Thanh Dat\AppData\Local\Programs\Python\Python312\Lib\site-packages\torch\nn\functional.py", line 2812, in batch_norm
+    return torch.batch_norm(
+           ^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 1.16 GiB. GPU 0 has a total capacity of 6.00 GiB of which 0 bytes is free. Of the allocated memory 11.12 GiB is allocated by PyTorch, and 26.18 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py", line 215, in <module>
+    model.use_checkpointing()
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\unet\unet.py", line 50, in use_checkpointing
+    self.inp = torch.utils.checkpoint(self.inp)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: 'module' object is not callable

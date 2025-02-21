@@ -1,0 +1,9 @@
+D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py:75: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
+Traceback (most recent call last):
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py", line 200, in <module>
+    train_model(
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py", line 83, in train_model
+    with tqdm(total=n_train, desc=f'Epoch {epoch}/{n_epochs}', unit='img') as pbar:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: 'module' object is not callable. Did you mean: 'tqdm.tqdm(...)'?

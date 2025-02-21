@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py", line 180, in <module>
+    train_model(
+  File "D:\MachineLearning\Notebook\6.390_Implement\UNet\train.py", line 83, in train_model
+    images = images.to(device, dtype=torch.float32, memory_format=torch.channels_last)
+             ^^^^^^^^^
+AttributeError: 'str' object has no attribute 'to'
