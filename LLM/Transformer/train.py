@@ -42,11 +42,6 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 1. Load dataset
-    if all((args.train_path, args.valid_path)):
-        train_data, valid_data = prepare_dataloaders_from_bpe_files(args, device)
-    elif args.data_pkl:
-        train_data, valid_data = prepare_dataloaders_from_pkl(args, device)
-    else:
-        raise
+    
 
     print(args)
