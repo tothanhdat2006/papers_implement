@@ -1,6 +1,7 @@
+import math
+
 import torch
 import torch.nn as nn
-import math
 
 from transformer.sublayers import *
 
@@ -35,7 +36,7 @@ class EncoderLayer(nn.Module):
         self.self_attn_block = self_attn_block
         self.positionwise_feedforward = positionwise_feedforward
 
-        self.residual_connection_layer = nn.Module([ResidualConnection(dropout) for _ in range(2)])
+        self.residual_connection_layer = nn.ModuleList([ResidualConnection(dropout) for _ in range(2)])
 
     def forward(self, enc_input, attn_masks=None):
         enc_output = self.residual_connection_layer[0](enc_input, \
@@ -50,7 +51,7 @@ class DecoderLayer(nn.Module):
         self.self_attn_block = self_attn_block
         self.cross_attn_block = cross_attn_block
         self.positionwise_feedforward = positionwise_feedforward
-        self.residual_connection_layer = nn.Module([ResidualConnection(dropout) for _ in range(3)])
+        self.residual_connection_layer = nn.ModuleList([ResidualConnection(dropout) for _ in range(3)])
     
     def forward(self, dec_input, enc_output, src_mask, target_mask=None):
         dec_output = self.residual_connection_layer[0](dec_input, \

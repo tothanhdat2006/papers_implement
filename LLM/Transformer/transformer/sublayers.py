@@ -1,6 +1,7 @@
+import math
+
 import torch
 import torch.nn as nn
-import math
 
 class AddNormLayer(nn.Module):
     def __init__(self, eps=1e-6):
@@ -66,13 +67,6 @@ class MultiHeadAttention(nn.Module):
         x += residual
 
         return self.layer_norm(x), attn_scores
-
-
-        
-        
-
-
-
 
 class PositionwiseFeedForward(nn.Module):
     def __init__(self, d_model, d_ff, dropout=0.1):
