@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 
+from transformer.sublayers import *
+from transformer.layers import *
+
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, seq_len, dropout):
         super().__init__()
@@ -24,34 +27,101 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False) # Freeze
+        x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False) # Don't train the positional encoding
         return self.dropout(x)
 
+
 class Encoder(nn.Module):
-    def __init__(self, d_model, d_inner, n_head, d_k, d_v, dropout=0.1):
+    def __init__(self, layers: nn.ModuleList):
         super().__init__()
+        self.layers = layers
+        self.norm_layer = AddNormLayer()
+
+    def forward(self, x, mask):
+        for layer in self.layers:
+            x = layer(x, mask)
+        return self.norm_layer(x)
 
 
 class Decoder(nn.Module):
-    def __init__(self, d_model, d_inner, n_head, d_k, d_v, dropout=0.1):
+    def __init__(self, layers: nn.ModuleList):
         super().__init__()
+        self.layers = layers
+        self.norm_layer = AddNormLayer()
+
+    def forward(self, dec_input, enc_output, src_mask, target_mask=None):
+        for layer in self.layers:
+            x = layer(x, dec_input, enc_output, src_mask, target_mask)
+        return self.norm_layer(x)
+
+
+class ProjectionLayer(nn.Module):  
+    def __init__(self, d_model, vocab_size):
+        super().__init__()
+        self.proj = nn.Linear(d_model, vocab_size)
+
+    def forward(self, x):
+        # (batch, seq_len, d_model) -> (batch, seq_len, vocab_size)
+        return torch.softmax(self.proj(x), dim=-1)
+
 
 class Transformer(nn.Module):
-    def __init__(self, n_src_vocab, n_trg_vocab, src_pad_idx, trg_pad_idx,
-                 d_word_vec=512, d_model=512, d_inner=2048,
-                 n_layers=6, n_head=8, d_k=64, d_v=64, dropout=0.1,
-                 n_position=200, trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True, 
-                 scale_emb_or_prj='prj'):
+    def __init__(self, encoder: Encoder, decoder: Decoder,
+                 src_embed: InputEmbedding, target_embed: InputEmbedding,
+                 src_pos: PositionalEncoding, target_pos: PositionalEncoding,
+                 proj_layer: ProjectionLayer):
         super().__init__()
+        
+        self.encoder = encoder
+        self.decoder = decoder
+        self.src_embed = src_embed
+        self.target_embed = target_embed
+        self.src_pos = src_pos
+        self.target_pos = target_pos
+        self.proj_layer = proj_layer
 
-        self.src_pad_idx, self.trg_pad_idx = src_pad_idx, trg_pad_idx
+    def encode(self, src, src_mask):
+        src = self.src_embed(src)
+        src = self.src_pos(src)
+        return self.encoder(src, src_mask)
+    
+    def decode(self, dec_input, enc_output, target, target_mask):
+        target = self.target_embed(target)
+        target = self.target_pos(target)
+        return self.decoder(dec_input, enc_output, target, target_mask)
+    
+    def proj(self, x):
+        return self.proj_layer(x)
+    
 
-        # Options here:
-        #   'emb': multiply \sqrt{d_model} to embedding output
-        #   'prj': multiply (\sqrt{d_model} ^ -1) to linear projection output
-        #   'none': no multiplication
+def build_transformer(src_vocab_sz, target_vocab_sz, src_seq_len, target_seq_len,
+                      d_model=512, d_ff=2048, d_k=64, d_v=64, n_head=8, n_layers=6, dropout=0.1):
+    # Build the model
+    src_embed = InputEmbedding(d_model, src_vocab_sz)
+    target_embed = InputEmbedding(d_model, target_vocab_sz)
+    src_pos = PositionalEncoding(d_model, src_seq_len, dropout)
+    target_pos = PositionalEncoding(d_model, target_seq_len, dropout)
 
-        assert scale_emb_or_prj in ['emb', 'prj', 'none']
-        scale_emb = (scale_emb_or_prj == 'emb') if emb_src_trg_weight_sharing else False
-        scale_prj = (scale_emb_or_prj == 'prj') if trg_emb_prj_weight_sharing else False
-        self.d_model = d_model
+    encoder_blocks = []
+    for _ in range(n_layers):
+        encoder_self_attn_block = MultiHeadAttention(d_model, n_head, d_k, d_v, dropout)
+        encoder_positionwise_feedforward = PositionwiseFeedForward(d_model, d_ff, dropout)
+        encoder_blocks.append(EncoderLayer(encoder_self_attn_block, encoder_positionwise_feedforward, dropout))
+
+    decoder_blocks = []
+    for _ in range(n_layers):
+        decoder_self_attn_block = MultiHeadAttention(d_model, n_head, d_k, d_v, dropout)
+        decoder_cross_attn_block = MultiHeadAttention(d_model, n_head, d_k, d_v, dropout)
+        decoder_positionwise_feedforward = PositionwiseFeedForward(d_model, d_ff, dropout)
+        decoder_blocks.append(DecoderLayer(decoder_self_attn_block, decoder_cross_attn_block, decoder_positionwise_feedforward, dropout))
+
+    encoder = Encoder(nn.ModuleList(encoder_blocks))
+    decoder = Decoder(nn.ModuleList(decoder_blocks))
+    proj_layer = ProjectionLayer(d_model, target_vocab_sz)
+    
+    transformer = Transformer(encoder, decoder, src_embed, target_embed, src_pos, target_pos, proj_layer)
+
+    for p in transformer.parameters():
+        if p.dim() > 1:
+            nn.init.xavier_uniform_(p)
+
