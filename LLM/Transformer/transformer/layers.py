@@ -21,45 +21,44 @@ class InputEmbedding(nn.Module):
 
 
 class ResidualConnection(nn.Module):
-    def __init__(self, dropout=0.1):
+    def __init__(self, features: int, dropout=0.1):
         super().__init__()
-        self.norm_layer = AddNormLayer(dropout)
+        self.norm_layer = AddNormLayer(features, dropout)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, sublayer):
-        return x + self.dropout(sublayer(self.norm_layer(x)))
+        x = self.norm_layer(x)
+        print("\n\n", x.shape, sublayer, "\n\n")
+        return x + self.dropout(sublayer(x)) # Section 5.4: Residual dropout
 
 
 class EncoderLayer(nn.Module):
-    def __init__(self, self_attn_block, positionwise_feedforward, dropout=0.1):
+    def __init__(self, features, self_attn_block, positionwise_feedforward, dropout=0.1):
         super().__init__()
         self.self_attn_block = self_attn_block
         self.positionwise_feedforward = positionwise_feedforward
 
-        self.residual_connection_layer = nn.ModuleList([ResidualConnection(dropout) for _ in range(2)])
+        self.residual_connections = nn.ModuleList([ResidualConnection(features, dropout) for _ in range(2)])
 
-    def forward(self, enc_input, attn_masks=None):
-        enc_output = self.residual_connection_layer[0](enc_input, \
-                                                    lambda enc_input: self.self_attn_block(enc_input, enc_input, enc_input, attn_masks))
-        enc_output = self.residual_connection_layer[1](enc_input, self.positionwise_feedforward)
-        return enc_output #QKV and attn_scores
+    def forward(self, x, src_mask=None):
+        x = self.residual_connections[0](x, lambda x: self.self_attn_block(x, x, x, src_mask))
+        x = self.residual_connections[1](x, self.positionwise_feedforward)
+        return x #QKV and attn_scores
 
 
 class DecoderLayer(nn.Module):
-    def __init__(self, self_attn_block, cross_attn_block, positionwise_feedforward, dropout=0.1):
+    def __init__(self, features, self_attn_block, cross_attn_block, positionwise_feedforward, dropout=0.1):
         super().__init__()
         self.self_attn_block = self_attn_block
         self.cross_attn_block = cross_attn_block
         self.positionwise_feedforward = positionwise_feedforward
-        self.residual_connection_layer = nn.ModuleList([ResidualConnection(dropout) for _ in range(3)])
+        self.residual_connections = nn.ModuleList([ResidualConnection(features, dropout) for _ in range(3)])
     
-    def forward(self, dec_input, enc_output, src_mask, target_mask=None):
-        dec_output = self.residual_connection_layer[0](dec_input, \
-                                                    lambda dec_input: self.self_attn_block(dec_input, dec_input, dec_input, target_mask))
-        dec_output = self.residual_connection_layer[1](dec_output, \
-                                                    lambda dec_output: self.cross_attn_block(dec_output, enc_output, enc_output, src_mask))
-        dec_output = self.residual_connection_layer[2](dec_output, self.positionwise_feedforward)
-        return dec_output #QKV and attn_scores
+    def forward(self, x, enc_output, src_mask, tgt_mask=None):
+        x = self.residual_connections[0](x, lambda x: self.self_attn_block(x, x, x, tgt_mask))
+        x = self.residual_connections[1](x, lambda x: self.cross_attn_block(x, enc_output, enc_output, src_mask))
+        x = self.residual_connections[2](x, self.positionwise_feedforward)
+        return x #QKV and attn_scores
         
 
         

@@ -16,9 +16,9 @@ class BilingualDataset(Dataset):
         self.tgt_lang = tgt_lang
         self.seq_len = seq_len
 
-        self.SOS_token = torch.Tensor([tokenizer_src.token_to_id(['[SOS]'])], dtype=torch.int64)
-        self.EOS_token = torch.Tensor([tokenizer_src.token_to_id(['[EOS]'])], dtype=torch.int64)
-        self.PAD_token = torch.Tensor([tokenizer_src.token_to_id(['[PAD]'])], dtype=torch.int64)
+        self.SOS_token = torch.tensor([tokenizer_tgt.token_to_id("[SOS]")], dtype=torch.int64)
+        self.EOS_token = torch.tensor([tokenizer_tgt.token_to_id("[EOS]")], dtype=torch.int64)
+        self.PAD_token = torch.tensor([tokenizer_tgt.token_to_id("[PAD]")], dtype=torch.int64)
 
     def __len__(self):
         return len(self.ds)
@@ -30,7 +30,7 @@ class BilingualDataset(Dataset):
 
         # Text -> token -> IDs
         enc_input_tokens = self.tokenizer_src.encode(src_text).ids
-        dec_input_tokens = self.tokenizer_src.encode(tgt_text).ids
+        dec_input_tokens = self.tokenizer_tgt.encode(tgt_text).ids
 
         # Fill <PAD> token to fit length (seq_len)
         enc_num_paddding_tokens = self.seq_len - len(enc_input_tokens) - 2 # SOS and EOS
@@ -50,14 +50,14 @@ class BilingualDataset(Dataset):
         dec_input = torch.cat(
             [
                 self.SOS_token,
-                torch.tenor(dec_input_tokens, dtype=torch.int64),
+                torch.tensor(dec_input_tokens, dtype=torch.int64),
                 torch.tensor([self.PAD_token] * dec_num_paddding_tokens, dtype=torch.int64)
             ]
         )
 
         label = torch.cat(
             [
-                torch.tenor(dec_input_tokens, dtype=torch.int64),
+                torch.tensor(dec_input_tokens, dtype=torch.int64),
                 self.EOS_token,
                 torch.tensor([self.PAD_token] * dec_num_paddding_tokens, dtype=torch.int64)
             ]
@@ -71,10 +71,10 @@ class BilingualDataset(Dataset):
             'encoder_input': enc_input,
             'decoder_input': dec_input,
             'encoder_mask': (enc_input != self.PAD_token).unsqueeze(0).unsqueeze(0).int(), # (1, 1, seq_len)
-            'decoder_mask': (dec_input != self.PAD_token).unsqueeze(0).unsqueeze(0).int() & causual_mask(dec_input.size(0)), # (1, seq_len) & (1, seq_len, seq_len)
+            'decoder_mask': (dec_input != self.PAD_token).unsqueeze(0).int() & causual_mask(dec_input.size(0)), # (1, seq_len) & (1, seq_len, seq_len)
             'label': label,
             'src_text': src_text,
-            'tgt_text': tgt_text
+            'tgt_text': tgt_text,
         }
         
 
