@@ -37,12 +37,12 @@ class MultiHeadAttention(nn.Module):
     def ScaledDotProductAttention(self, q, k, v, mask=None):
         attn_scores = (q @ k.transpose(-2, -1)) / math.sqrt(self.d_k) #Q @ K^T / sqrt(d_k)
         if mask is not None:
-            attn_scores = attn_scores.masked_fill(mask==0, -1e9)
+            attn_scores = attn_scores.masked_fill_(mask==0, -1e9)
 
         # attn_scores = (batch, h, seq_len) -> (batch, h, seq_len, seq_len)
         attn_scores = self.dropout(torch.softmax(attn_scores, dim=-1)) # softmax(Q @ K^T / sqrt(d_k))
         # output = (batch, h, seq_len, seq_len) -> (batch, h, seq_len, d_v)
-        output = torch.matmul(attn_scores, v) # softmax(Q @ K^T / sqrt(d_k)) @ V
+        output = attn_scores @ v # softmax(Q @ K^T / sqrt(d_k)) @ V
 
         return output, attn_scores
 
@@ -59,7 +59,8 @@ class MultiHeadAttention(nn.Module):
         q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)
 
         if mask is not None:
-            mask = mask.unsqueeze(1)
+            if mask.dim() == 3: # Important
+                mask = mask.unsqueeze(1)
 
         x, self.attn_scores = MultiHeadAttention.ScaledDotProductAttention(self, q, k, v, mask=mask)
 

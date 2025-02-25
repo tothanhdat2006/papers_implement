@@ -1,5 +1,17 @@
+# Virtual environment
 .env
-data/
 venv/
+
+# Data and model weights
+data/
 weights/
+
+# Logs and cache
+__pycache__/
+*.pyc
+*.log
+
+# TensorBoard and training artifacts
+runs/
+events*
 tokenizer_*

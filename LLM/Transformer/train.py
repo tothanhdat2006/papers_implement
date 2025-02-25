@@ -56,7 +56,7 @@ def train_model(config, device):
 
     optimizer = optim.Adam(model.parameters(), lr=config.lr, betas=(0.9, 0.98), eps=1e-9) # Section 5.3: Optimizer
     initial_epoch = 0
-    global_epoch = 0
+    global_step = 0
 
     if config.preload:
         model_filename = config.get_weight_file_path(config, config.preload)
@@ -64,7 +64,7 @@ def train_model(config, device):
         state = torch.load(model_filename)
         initial_epoch = state['epoch'] + 1
         optimizer.load_dict(state['optimizer_state_dict'])
-        global_step = state['global_epoch']
+        global_step = state['global_step']
 
     loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device) # Section 5.4: Label Smoothing
 
@@ -78,7 +78,7 @@ def train_model(config, device):
             decoder_mask = batch['decoder_mask'].to(device) # (batch_sz, 1, seq_len, seq_len)
 
             encoder_output = model.encode(encoder_input, encoder_mask) # (batch_sz, seq_len, d_model)
-            decoder_output = model.decode(encoder_output, encoder_mask, decoder_input, decoder_mask) # (batch_sz, seq_len, d_model)
+            decoder_output = model.decode(decoder_input, encoder_output, encoder_mask, decoder_mask) # (batch_sz, seq_len, d_model)
             proj_output = model.project(decoder_output) # (batch_sz, seq_len, tgt_vocab_size)
 
             label = batch['label'].to(device) # (batch_sz, seq_len)

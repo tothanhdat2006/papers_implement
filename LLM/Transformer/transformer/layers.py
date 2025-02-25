@@ -27,8 +27,7 @@ class ResidualConnection(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, sublayer):
-        x = self.norm_layer(x)
-        print("\n\n", x.shape, sublayer, "\n\n")
+        x = self.norm_layer(x) # Section 5.4: Layer Normalization
         return x + self.dropout(sublayer(x)) # Section 5.4: Residual dropout
 
 
