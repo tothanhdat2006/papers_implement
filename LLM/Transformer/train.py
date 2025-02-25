@@ -3,6 +3,8 @@ import argparse
 
 import torch
 
+from transformer.transformer import build_transformer
+
 def argparser():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("--data_pkl", default=None)
@@ -29,6 +31,10 @@ def argparser():
 
     return argparser.parse_args()
 
+def get_model(config, vocab_src_len, vocab_tgt_len):
+    model = build_transformer(vocab_src_len, vocab_tgt_len, config['seq_len'], config['seq_len'], config['d_model'])
+    return model
+
 if __name__ == "__main__":
     args = argparser()
 
@@ -43,5 +49,3 @@ if __name__ == "__main__":
 
     # 1. Load dataset
     
-
-    print(args)
