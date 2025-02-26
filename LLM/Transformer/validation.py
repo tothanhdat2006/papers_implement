@@ -25,6 +25,8 @@ def greedy_decode(model, src, src_mask, tokenizer_src, tokenizer_tgt, max_len, d
 
         if nxt_word == EOS_idx:
             break
+        
+    return dec_input.squeeze(0)
 
 def run_validation(model, val_ds, tokenizer_src, tokenizer_tgt, max_len, device, print_msg, global_step, writer, num_examples=2):
     model.eval()
