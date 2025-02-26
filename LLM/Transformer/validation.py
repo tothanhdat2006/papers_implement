@@ -48,7 +48,7 @@ def run_validation(model, val_ds, tokenizer_src, tokenizer_tgt, max_len, device,
             # Predict
             src_text = batch['src_text'][0]
             tgt_text = batch['tgt_text'][0]
-            model_out_text = tokenizer_tgt.decode(model.out.detach().cpu().numpy())
+            model_out_text = tokenizer_tgt.decode(model_out.detach().cpu().numpy())
 
             src_texts.append(src_text)
             expected.append(tgt_text)
@@ -56,9 +56,9 @@ def run_validation(model, val_ds, tokenizer_src, tokenizer_tgt, max_len, device,
 
             # Print to console
             print_msg('-'*console_width)
-            print_msg(f'SOURCE: {src_text}')
-            print_msg(f'TARGET: {tgt_text}')
-            print_msg(f'PREDICTED: {model_out_text}')
+            print_msg(f"{f'SOURCE: ':>12}{src_text}")
+            print_msg(f"{f'TARGET: ':>12}{tgt_text}")
+            print_msg(f"{f'PREDICTED: ':>12}{model_out_text}")
 
             if cnt == num_examples:
                 break
