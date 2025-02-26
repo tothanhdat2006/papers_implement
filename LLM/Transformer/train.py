@@ -77,7 +77,7 @@ def train_model(config, device):
         run_validation(model, val_dataloader, tokenizer_src, tokenizer_tgt, config.seq_len, device,
                         print_msg=lambda msg: batch_iter.write(msg), global_step=global_step, writer=writer)
 
-        model_filename = config.get_weight_file_path(config, f'{epoch:02d}')
+        model_filename = config.get_weight_file_path(f'{epoch:02d}')
         torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
