@@ -1,5 +1,5 @@
 import torch
-import torchmetrics
+from torchmetrics.text import CharErrorRate, WordErrorRate, BLEUScore
 
 from utils.dataset import causual_mask
 
@@ -68,19 +68,19 @@ def run_validation(model, val_ds, tokenizer_src, tokenizer_tgt, max_len, device,
     # Write to tensorboard
     if writer:
         # Character error rate
-        metric = torchmetrics.CharErrorRate()
+        metric = CharErrorRate()
         cer = metric(predicted, expected)
         writer.add_scalar('validation cer', cer, global_step)
         writer.flush()
         
         # Word error rate
-        metric = torchmetrics.WordErrorRate()
+        metric = WordErrorRate()
         wer = metric(predicted, expected)
         writer.add_scalar('validation wer', wer, global_step)
         writer.flush()
         
         # BLEU score
-        metric = torchmetrics.BLEUScore()
+        metric = BLEUScore()
         bleu = metric(predicted, expected)
         writer.add_scalar('validation BLEU', bleu, global_step)
         writer.flush()

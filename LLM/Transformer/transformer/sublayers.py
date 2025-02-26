@@ -51,9 +51,9 @@ class MultiHeadAttention(nn.Module):
         k = self.w_k(k)
         v = self.w_v(v)
 
-        q = q.view(q.shape[0], -1, self.n_head, self.d_k) # (batch, seq_len, d_model) -> (batch, len_q, n_head, d_k)
-        k = k.view(k.shape[0], -1, self.n_head, self.d_k) # (batch, seq_len, d_model) -> (batch, len_k, n_head, d_k)
-        v = v.view(v.shape[0], -1, self.n_head, self.d_k) # (batch, seq_len, d_model) -> (batch, len_v, n_head, d_k)
+        q = q.view(q.shape[0], q.shape[1], self.n_head, self.d_k) # (batch, seq_len, d_model) -> (batch, len_q, n_head, d_k)
+        k = k.view(k.shape[0], k.shape[1], self.n_head, self.d_k) # (batch, seq_len, d_model) -> (batch, len_k, n_head, d_k)
+        v = v.view(v.shape[0], v.shape[1], self.n_head, self.d_k) # (batch, seq_len, d_model) -> (batch, len_v, n_head, d_k)
 
         # (batch, len_q, n_head, d_k) -> (batch, n_head, len_q, d_k)
         q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)
@@ -77,8 +77,6 @@ class PositionwiseFeedForward(nn.Module):
         super().__init__()
         self.Wb1 = nn.Linear(d_model, d_ff)
         self.Wb2 = nn.Linear(d_ff, d_model)
-
-        self.layer_norm = nn.LayerNorm(d_model, eps = 1e-6)
         self.dropout = nn.Dropout(dropout)
     
     def forward(self, x):

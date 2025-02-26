@@ -13,7 +13,6 @@ from utils.preprocess import get_ds
 from transformer.transformer import build_transformer 
 from validation import run_validation
 
-
 def get_model(config, vocab_src_len, vocab_tgt_len):
     model = build_transformer(vocab_src_len, vocab_tgt_len, config.seq_len, config.seq_len, config.d_model)
     return model
@@ -24,7 +23,10 @@ def train_model(config, device):
         print(f"Device name: {torch.cuda.get_device_name(device.index)}")
         print(f"Device memory: {torch.cuda.get_device_properties(device.index).total_memory / 1024 ** 3} GB")
 
-    Path(config.model_folder).mkdir(parents=True, exist_ok=True)
+    if config.platform == "kaggle":
+        Path("/kaggle/working/papers_implement/LLM/Transformer/" + config.model_folder).mkdir(parents=True, exist_ok=True)
+    else:
+        Path(config.model_folder).mkdir(parents=True, exist_ok=True)
 
     train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
     model = get_model(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
@@ -37,11 +39,22 @@ def train_model(config, device):
     global_step = 0
 
     if config.preload:
-        model_filename = config.get_weight_file_path(config, config.preload)
+        if config.platform == "kaggle":
+            model_filename = config.get_weight_file_path_kaggle("/kaggle/working/papers_implement/LLM/Transformer", config.preload)
+        else:
+            model_filename = config.get_weight_file_path(config.preload)
+
         print(f'Preloading model {model_filename}')
-        state = torch.load(model_filename)
+
+        if torch.cuda.is_available():
+            state = torch.load(model_filename, weights_only=True)
+        else:
+            state = torch.load(model_filename, map_location=torch.device("cpu"), weights_only=True)
+
+        print("Preloading model complete!")
+        print("Loading model state...")
         initial_epoch = state['epoch'] + 1
-        optimizer.load_dict(state['optimizer_state_dict'])
+        optimizer.load_state_dict(state['optimizer_state_dict'])
         global_step = state['global_step']
 
     loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device) # Section 5.4: Label Smoothing
@@ -77,7 +90,11 @@ def train_model(config, device):
         run_validation(model, val_dataloader, tokenizer_src, tokenizer_tgt, config.seq_len, device,
                         print_msg=lambda msg: batch_iter.write(msg), global_step=global_step, writer=writer)
 
-        model_filename = config.get_weight_file_path(config, f'{epoch:02d}')
+        if config.platform == "kaggle":
+            model_filename = config.get_weight_file_path_kaggle("/kaggle/working/papers_implement/LLM/Transformer", f'{epoch:02d}')
+        else:
+            model_filename = config.get_weight_file_path(f'{epoch:02d}')
+
         torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
@@ -86,9 +103,21 @@ def train_model(config, device):
         }, model_filename)
 
 
+def get_args():
+    parser = argparse.ArgumentParser(description='Train Transformer')
+    parser.add_argument('--n_epochs', type=int, default=5, help='Number of epochs')
+    parser.add_argument('--train_size', type=int, default=100, help='Training set size percentage')
+    parser.add_argument('--preload', type=str, default=None, help='Model weight')
+    parser.add_argument('--platform', type=str, default=None, help='Platform used to train')
+    return parser.parse_args()
+
 if __name__ == "__main__":
-    # args = argparser()
+    args = get_args()
     config = Config()
+    config.preload = args.preload
+    config.platform = args.platform
+    config.n_epochs = args.n_epochs
+    config.train_size = args.train_size
     assert config.d_k * config.n_head == config.d_model, f'd_k * n_head must equal to d_model'
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
