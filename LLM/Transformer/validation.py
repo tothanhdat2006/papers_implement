@@ -47,7 +47,7 @@ def run_validation(model, val_ds, tokenizer_src, tokenizer_tgt, max_len, device,
             
             # Predict
             src_text = batch['src_text'][0]
-            tgt_text = batch['tgt_text'][1]
+            tgt_text = batch['tgt_text'][0]
             model_out_text = tokenizer_tgt.decode(model.out.detach().cpu().numpy())
 
             src_texts.append(src_text)
