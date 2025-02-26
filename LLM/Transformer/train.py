@@ -10,31 +10,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 from configs.config import Config
 from utils.preprocess import get_ds
-from transformer.transformer import build_transformer
+from transformer.transformer import build_transformer 
+from validation import run_validation
 
-def argparser():
-    argparser = argparse.ArgumentParser()
-    
-    argparser.add_argument("--train_path", default=None)
-    argparser.add_argument("--valid_path", default=None)
-
-    argparser.add_argument("--epoch", type=str, default=10)
-    argparser.add_argument("--batch_size", type=str, default=2048)
-
-    argparser.add_argument("--d_model", type=str, default=512)
-    argparser.add_argument("--d_ff", type=str, default=2048)
-    argparser.add_argument("--d_k", type=str, default=64)
-    argparser.add_argument("--d_v", type=str, default=64)
-    
-    argparser.add_argument("--n_head", type=str, default=8)
-    argparser.add_argument("--n_layers", type=str, default=6)
-
-    argparser.add_argument("--dropout", type=float, default=0.1)
-
-    argparser.add_argument("--output_dir", type=str, default=None)
-    argparser.add_argument("--save_mode", type=str, choices=['all', 'best'], default="best")
-
-    return argparser.parse_args()
 
 def get_model(config, vocab_src_len, vocab_tgt_len):
     model = build_transformer(vocab_src_len, vocab_tgt_len, config.seq_len, config.seq_len, config.d_model)
@@ -42,7 +20,7 @@ def get_model(config, vocab_src_len, vocab_tgt_len):
 
 def train_model(config, device):
     print(f'Using device: {device}')
-    if (device == 'cuda'):
+    if torch.cuda.is_available():
         print(f"Device name: {torch.cuda.get_device_name(device.index)}")
         print(f"Device memory: {torch.cuda.get_device_properties(device.index).total_memory / 1024 ** 3} GB")
 
@@ -69,9 +47,9 @@ def train_model(config, device):
     loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device) # Section 5.4: Label Smoothing
 
     for epoch in range(initial_epoch, config.n_epochs):
-        model.train()
         batch_iter = tqdm(train_dataloader, desc=f"Processing epoch {epoch:02d}")
         for batch in batch_iter:
+            model.train()
             encoder_input = batch['encoder_input'].to(device) # (batch_sz, seq_len)
             decoder_input = batch['decoder_input'].to(device) # (batch_sz, seq_len)
             encoder_mask = batch['encoder_mask'].to(device) # (batch_sz, 1, 1, seq_len)
@@ -96,6 +74,9 @@ def train_model(config, device):
 
             global_step += 1
 
+        run_validation(model, val_dataloader, tokenizer_src, tokenizer_tgt, config.seq_len, device,
+                        print_msg=lambda msg: batch_iter.write(msg), global_step=global_step, writer=writer)
+
         model_filename = config.get_weight_file_path(config, f'{epoch:02d}')
         torch.save({
             'epoch': epoch,
@@ -108,6 +89,7 @@ def train_model(config, device):
 if __name__ == "__main__":
     # args = argparser()
     config = Config()
+    assert config.d_k * config.n_head == config.d_model, f'd_k * n_head must equal to d_model'
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     

@@ -11,6 +11,8 @@ class Config:
         self.d_ff = 2048
         self.d_k = 64
         self.d_v = 64
+        self.n_head = 8
+        self.n_layers = 6
         self.lang_src = "en"
         self.lang_tgt = "it"
         self.model_folder = "weights"
