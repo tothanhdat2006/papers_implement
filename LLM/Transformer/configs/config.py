@@ -14,6 +14,7 @@ class Config:
         self.d_v = 64
         self.n_head = 8
         self.n_layers = 6
+        self.datasource = "opus_books"
         self.lang_src = "en"
         self.lang_tgt = "it"
         self.model_folder = "weights"

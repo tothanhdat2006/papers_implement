@@ -15,7 +15,7 @@ def greedy_decode(model, src, src_mask, tokenizer_src, tokenizer_tgt, max_len, d
         
         dec_mask = causual_mask(dec_input.size(1)).type_as(src_mask).to(device)
 
-        out = model.decode(dec_input, enc_output, src_mask, dec_mask)
+        out = model.decode(enc_output, src_mask, dec_input, dec_mask)
 
         # Get next token with max probabilities
         prob = model.project(out[:, -1])

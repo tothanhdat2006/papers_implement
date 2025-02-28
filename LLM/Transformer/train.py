@@ -12,6 +12,7 @@ from configs.config import Config
 from utils.preprocess import get_ds
 from transformer.transformer import build_transformer 
 from validation import run_validation
+from translate import translate
 
 def get_model(config, vocab_src_len, vocab_tgt_len):
     model = build_transformer(vocab_src_len, vocab_tgt_len, config.seq_len, config.seq_len, config.d_model)
@@ -69,7 +70,7 @@ def train_model(config, device):
             decoder_mask = batch['decoder_mask'].to(device) # (batch_sz, 1, seq_len, seq_len)
 
             encoder_output = model.encode(encoder_input, encoder_mask) # (batch_sz, seq_len, d_model)
-            decoder_output = model.decode(decoder_input, encoder_output, encoder_mask, decoder_mask) # (batch_sz, seq_len, d_model)
+            decoder_output = model.decode(encoder_output, encoder_mask, decoder_input, decoder_mask) # (batch_sz, seq_len, d_model)
             proj_output = model.project(decoder_output) # (batch_sz, seq_len, tgt_vocab_size)
 
             label = batch['label'].to(device) # (batch_sz, seq_len)
@@ -81,9 +82,9 @@ def train_model(config, device):
             writer.add_scalar('train_loss', loss.item(), global_step)
             writer.flush()
 
+            optimizer.zero_grad(set_to_none=True)
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
 
             global_step += 1
 
@@ -95,18 +96,21 @@ def train_model(config, device):
         else:
             model_filename = config.get_weight_file_path(f'{epoch:02d}')
 
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'global_step': global_step
-        }, model_filename)
+        # torch.save({
+        #     'epoch': epoch,
+        #     'model_state_dict': model.state_dict(),
+        #     'optimizer_state_dict': optimizer.state_dict(),
+        #     'global_step': global_step
+        # }, model_filename)
+    
+    print(translate(model, 'Jane Eyre'))
 
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train Transformer')
     parser.add_argument('--n_epochs', type=int, default=5, help='Number of epochs')
-    parser.add_argument('--train_size', type=int, default=100, help='Training set size percentage')
+    parser.add_argument('--lr', type=float, default=1e-4, help='Number of epochs')
+    parser.add_argument('--train_size', type=int, default=100, help='Training set size')
     parser.add_argument('--preload', type=str, default=None, help='Model weight')
     parser.add_argument('--platform', type=str, default=None, help='Platform used to train')
     return parser.parse_args()
@@ -118,6 +122,7 @@ if __name__ == "__main__":
     config.platform = args.platform
     config.n_epochs = args.n_epochs
     config.train_size = args.train_size
+    config.lr = args.lr
     assert config.d_k * config.n_head == config.d_model, f'd_k * n_head must equal to d_model'
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

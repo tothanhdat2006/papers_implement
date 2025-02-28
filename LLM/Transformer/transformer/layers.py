@@ -27,8 +27,7 @@ class ResidualConnection(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, sublayer):
-        x = self.norm_layer(x) # Section 5.4: Layer Normalization
-        return x + self.dropout(sublayer(x)) # Section 5.4: Residual dropout
+        return x + self.dropout(sublayer(self.norm_layer(x))) # Section 5.4: Residual dropout
 
 
 class EncoderLayer(nn.Module):
@@ -53,7 +52,7 @@ class DecoderLayer(nn.Module):
         self.positionwise_feedforward = positionwise_feedforward
         self.residual_connections = nn.ModuleList([ResidualConnection(features, dropout) for _ in range(3)])
     
-    def forward(self, x, enc_output, src_mask, tgt_mask=None):
+    def forward(self, x, enc_output, src_mask, tgt_mask):
         x = self.residual_connections[0](x, lambda x: self.self_attn_block(x, x, x, tgt_mask))
         x = self.residual_connections[1](x, lambda x: self.cross_attn_block(x, enc_output, enc_output, src_mask))
         x = self.residual_connections[2](x, self.positionwise_feedforward)

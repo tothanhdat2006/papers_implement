@@ -50,7 +50,7 @@ class Decoder(nn.Module):
         self.layers = layers
         self.norm_layer = AddNormLayer(features)
 
-    def forward(self, x, enc_output, src_mask, tgt_mask=None):
+    def forward(self, x, enc_output, src_mask, tgt_mask):
         for layer in self.layers:
             x = layer(x, enc_output, src_mask, tgt_mask)
         return self.norm_layer(x)
@@ -87,7 +87,7 @@ class Transformer(nn.Module):
         return self.encoder(src, src_mask)
     
     # Ensure params order
-    def decode(self, tgt, enc_output, src_mask, tgt_mask):
+    def decode(self, enc_output, src_mask, tgt, tgt_mask):
         tgt = self.tgt_embed(tgt)
         tgt = self.tgt_pos(tgt)
         return self.decoder(tgt, enc_output, src_mask, tgt_mask)

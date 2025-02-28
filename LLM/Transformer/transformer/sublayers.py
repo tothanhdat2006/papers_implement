@@ -29,7 +29,6 @@ class MultiHeadAttention(nn.Module):
         self.w_v = nn.Linear(d_model, n_head * d_v, bias = False)
         self.w_o = nn.Linear(n_head * d_v, d_model, bias = False)
 
-        self.layer_norm = nn.LayerNorm(d_model, eps = 1e-6)
         self.dropout = nn.Dropout(dropout)
 
     # Section 3.2.1: Scaled Dot-Product Attention
