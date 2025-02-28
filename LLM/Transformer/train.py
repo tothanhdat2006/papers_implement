@@ -58,7 +58,7 @@ def train_model(config, device):
         optimizer.load_state_dict(state['optimizer_state_dict'])
         global_step = state['global_step']
 
-    loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device) # Section 5.4: Label Smoothing
+    loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_tgt.token_to_id('[PAD]'), label_smoothing=0.1).to(device) # Section 5.4: Label Smoothing
 
     for epoch in range(initial_epoch, config.n_epochs):
         batch_iter = tqdm(train_dataloader, desc=f"Processing epoch {epoch:02d}")

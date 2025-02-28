@@ -60,7 +60,7 @@ def translate(model, sentence: str):
         if label != "": print(f"{f'ID: ':>12}{id}") 
         print(f"{f'SOURCE: ':>12}{sentence}")
         if label != "": print(f"{f'TARGET: ':>12}{label}") 
-        print(f"{f'PREDICTED: (':>12}", end='')
+        print(f"{f'PREDICTED: ':>12}", end='')
 
         # Generate the translation word by word
         while decoder_input.size(1) < seq_len:

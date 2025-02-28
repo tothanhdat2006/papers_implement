@@ -32,7 +32,6 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     # Section 3.2.1: Scaled Dot-Product Attention
-    @staticmethod
     def ScaledDotProductAttention(self, q, k, v, mask=None):
         attn_scores = (q @ k.transpose(-2, -1)) / math.sqrt(self.d_k) #Q @ K^T / sqrt(d_k)
         if mask is not None:
@@ -57,11 +56,7 @@ class MultiHeadAttention(nn.Module):
         # (batch, len_q, n_head, d_k) -> (batch, n_head, len_q, d_k)
         q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)
 
-        if mask is not None:
-            if mask.dim() == 3: # Important
-                mask = mask.unsqueeze(1)
-
-        x, self.attn_scores = MultiHeadAttention.ScaledDotProductAttention(self, q, k, v, mask=mask)
+        x, self.attn_scores = self.ScaledDotProductAttention(q, k, v, mask=mask)
 
         # Concat all heads together
         # (batch, h, seq_len, d_v) -> (batch, seq_len, h, d_v) -> (batch, seq_len, d_model)
