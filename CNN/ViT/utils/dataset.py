@@ -47,14 +47,18 @@ def get_ds(config):
     for folder in os.listdir(config.TRAIN_DIR):
         labels.append(folder.split('/')[-1])
 
+    print(f"Found labels: {labels}")
     train_data = []
     test_data = []
     for cls in labels:
         train_data.append(glob.glob(os.path.join(config.TRAIN_DIR, f'{cls}/*.jpg')))
         test_data.append(glob.glob(os.path.join(config.TEST_DIR, f'{cls}/*.jpg')))
+        print(f"Class {cls}: {len(train_data[-1])} train files, {len(test_data[-1])} test files")
 
     train_list = np.concatenate(train_data)
     test_list = np.concatenate(test_data)
+    
+    print(f"Total samples - Train: {len(train_list)}, Test: {len(test_list)}")  # Debug print
 
     train_labels = [os.path.basename(os.path.dirname(x)) for x in train_list]
     test_labels = [os.path.basename(os.path.dirname(x)) for x in test_list]
