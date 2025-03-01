@@ -9,9 +9,6 @@ from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 from sklearn.model_selection import train_test_split
 
-TRAIN_DIR = 'data/training'
-TEST_DIR = 'data/validation'
-
 class CustomDataset(Dataset):
     def __init__(self, file_list, label_list):
         self.file_list = file_list
@@ -47,14 +44,14 @@ class CustomDataset(Dataset):
 
 def get_ds(config):
     labels = []
-    for folder in os.listdir(TRAIN_DIR):
+    for folder in os.listdir(config.TRAIN_DIR):
         labels.append(folder.split('/')[-1])
 
     train_data = []
     test_data = []
     for cls in labels:
-        train_data.append(glob.glob(os.path.join(TRAIN_DIR, f'{cls}/*.jpg')))
-        test_data.append(glob.glob(os.path.join(TEST_DIR, f'{cls}/*.jpg')))
+        train_data.append(glob.glob(os.path.join(config.TRAIN_DIR, f'{cls}/*.jpg')))
+        test_data.append(glob.glob(os.path.join(config.TEST_DIR, f'{cls}/*.jpg')))
 
     train_list = np.concatenate(train_data)
     test_list = np.concatenate(test_data)

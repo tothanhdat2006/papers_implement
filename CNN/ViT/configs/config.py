@@ -3,6 +3,8 @@ from pathlib import Path
 class Config:
     def __init__(self):
         # Training
+        self.TRAIN_DIR = Path('data/train')
+        self.TEST_DIR = Path('data/test')
         self.platform = None
         self.train_size = 100
         self.test_size = 10

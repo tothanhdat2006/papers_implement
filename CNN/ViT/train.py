@@ -120,6 +120,10 @@ if __name__ == "__main__":
     config.save_name = args.save_name
     config.preload = args.preload
     config.preload_name = args.preload_name
+
+    if config.platform == "kaggle":
+        config.TRAIN_DIR = Path('/kaggle/working/papers_implement/CNN/ViT/data/train')
+        config.TEST_DIR = Path('/kaggle/working/papers_implement/CNN/ViT/data/test')
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
