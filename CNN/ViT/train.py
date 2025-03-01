@@ -28,8 +28,27 @@ def train_model(config, device):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config.lr)
     # scheduler = StepLR(optimizer, step_size=1, gamma=config.gamma)
+    initial_epoch = 0
+    global_step = 0
 
-    for epoch in range(config.n_epochs):
+    if config.preload:
+        if config.platform == "kaggle":
+            model_filename = config.get_weight_file_path_kaggle("/kaggle/working/papers_implement/CNN/ViT", config.preload_name, config.preload)
+        else:
+            model_filename = config.get_weight_file_path(config.preload, config.preload_name)
+
+        print(f'Preloading model {model_filename}')
+
+        if torch.cuda.is_available():
+            state = torch.load(model_filename, weights_only=True)
+        else:
+            state = torch.load(model_filename, map_location=torch.device("cpu"), weights_only=True)
+
+        initial_epoch = state['epoch'] + 1
+        optimizer.load_state_dict(state['optimizer_state_dict'])
+        global_step = state['global_step']
+
+    for epoch in range(initial_epoch, config.n_epochs):
         model.train()
         epoch_accuracy = 0.0
         epoch_loss = 0.0
@@ -49,11 +68,32 @@ def train_model(config, device):
             epoch_loss += loss / len(train_loader)
             batch_iter.set_postfix({"loss": f"{loss.item():6.3f}", "accuracy": f"{acc:6.3f}"})
 
+            global_step += 1
+
         loss, acc = run_validation(model, valid_loader, criterion, device)
         print(f"Epoch {epoch + 1}/{config.n_epochs}, loss: {epoch_loss:.3f}, accuracy: {epoch_accuracy:.3f}")
 
     loss, acc = run_validation(model, test_loader, criterion, device)
     print(f"Test loss: {loss:.3f}, accuracy: {acc:.3f}")
+
+    if config.save:
+        if config.platform == "kaggle":
+            model_filename = config.get_weight_file_path_kaggle("/kaggle/working/papers_implement/CNN/ViT", config.save_name, f'{epoch:02d}')
+        else:
+            model_filename = config.get_weight_file_path(config.save_name, f'{epoch:02d}')
+        
+        print(f'Saving model {model_filename}')
+
+        if not os.path.exists(config.model_folder):
+            os.makedirs(config.model_folder)
+        
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'global_step': global_step
+        }, model_filename)
+    
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train Transformer')
@@ -61,17 +101,25 @@ def get_args():
     parser.add_argument('--lr', type=float, default=1e-3, help='Number of epochs')
     parser.add_argument('--train_size', type=int, default=100, help='Training set size percentage')
     parser.add_argument('--n_classes', type=int, default=1000, help='Number of class')
+    parser.add_argument('--save', type=bool, default=False, help='Save model or not')
+    parser.add_argument('--save_name', type=str, default='ViT_weight_', help='Model weights name for saving')
+    parser.add_argument('--preload', type=str, default=None, help="Weight's epoch to be loaded")
+    parser.add_argument('--preload_name', type=str, default='ViT_weight_', help='Model weights name for preloading')
     parser.add_argument('--platform', type=str, default=None, help='Platform used to train')
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = get_args()
     config = Config()
-    config.platform = args.platform
+    config.n_classes = args.n_classes
     config.n_epochs = args.n_epochs
     config.train_size = args.train_size
-    config.n_classes = args.n_classes
     config.lr = args.lr
+    config.platform = args.platform
+    config.save = args.save
+    config.save_name = args.save_name
+    config.preload = args.preload
+    config.preload_name = args.preload_name
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
