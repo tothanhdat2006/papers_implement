@@ -102,8 +102,47 @@ def train_model(config, device):
         #     'optimizer_state_dict': optimizer.state_dict(),
         #     'global_step': global_step
         # }, model_filename)
-    
-    print(translate(model, 'Jane Eyre'))
+        
+    source_sentence = "Jane Eyre"  # Replace with your desired source sentence
+    model.eval()  # Set the model to evaluation mode
+    with torch.no_grad():  # Disable gradient calculation
+        # Encode the source sentence
+        source = tokenizer_src.encode(source_sentence)
+        source = torch.cat([
+            torch.tensor([tokenizer_src.token_to_id('[SOS]')], dtype=torch.int64),
+            torch.tensor(source.ids, dtype=torch.int64),
+            torch.tensor([tokenizer_src.token_to_id('[EOS]')], dtype=torch.int64),
+            torch.tensor([tokenizer_src.token_to_id('[PAD]')] * (config.seq_len - len(source.ids) - 2), dtype=torch.int64)
+        ], dim=0).to(device)
+        source_mask = (source != tokenizer_src.token_to_id('[PAD]')).unsqueeze(0).unsqueeze(0).int().to(device)
+        encoder_output = model.encode(source, source_mask)
+
+        # Initialize the decoder input with the SOS token
+        decoder_input = torch.empty(1, 1).fill_(tokenizer_tgt.token_to_id('[SOS]')).type_as(source).to(device)
+
+        # Generate the translation word by word
+        translated_sentence = ""
+        while decoder_input.size(1) < config.seq_len:
+            # Build mask for target and calculate output
+            decoder_mask = torch.triu(torch.ones((1, decoder_input.size(1), decoder_input.size(1))), diagonal=1).type(torch.int).type_as(source_mask).to(device)
+            out = model.decode(encoder_output, source_mask, decoder_input, decoder_mask)
+
+            # Project next token
+            prob = model.project(out[:, -1])
+            _, next_word = torch.max(prob, dim=1)
+            decoder_input = torch.cat([decoder_input, torch.empty(1, 1).type_as(source).fill_(next_word.item()).to(device)], dim=1)
+
+            # Decode the translated word
+            translated_word = tokenizer_tgt.decode([next_word.item()])
+            translated_sentence += translated_word + " "
+
+            # Break if we predict the end of sentence token
+            if next_word == tokenizer_tgt.token_to_id('[EOS]'):
+                break
+
+        print(f"Original Sentence: {source_sentence}")
+        print(f"Translated Sentence: {translated_sentence}")
+
 
 
 def get_args():
