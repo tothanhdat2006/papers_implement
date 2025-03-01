@@ -44,6 +44,7 @@ def train_model(config, device):
         else:
             state = torch.load(model_filename, map_location=torch.device("cpu"), weights_only=True)
 
+        model.load_state_dict(state['model_state_dict'])
         initial_epoch = state['epoch'] + 1
         optimizer.load_state_dict(state['optimizer_state_dict'])
         global_step = state['global_step']
