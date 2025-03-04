@@ -30,32 +30,32 @@ class VGG16(nn.Module):
         self.fc1 = nn.Linear(in_features=512, out_features=4096)
         self.fc2 = nn.Linear(in_features=4096, out_features=4096)
         self.fc3 = nn.Linear(in_features=4096, out_features=1000)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(inplace=True)
 
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
+        x = self.relu(self.conv1(x))
+        x = self.relu(self.conv2(x))
         x = self.maxpool1(x)
 
-        x = self.conv3(x)
-        x = self.conv4(x)
+        x = self.relu(self.conv3(x))
+        x = self.relu(self.conv4(x))
         x = self.maxpool2(x)
 
-        x = self.conv5(x)
-        x = self.conv6(x)
-        x = self.conv7(x)
+        x = self.relu(self.conv5(x))
+        x = self.relu(self.conv6(x))
+        x = self.relu(self.conv7(x))
         x = self.maxpool3(x)
 
-        x = self.conv8(x)
-        x = self.conv9(x)
-        x = self.conv10(x)
+        x = self.relu(self.conv8(x))
+        x = self.relu(self.conv9(x))
+        x = self.relu(self.conv10(x))
         x = self.maxpool4(x)
 
-        x = self.conv11(x)
-        x = self.conv12(x)
-        x = self.conv13(x)
+        x = self.relu(self.conv11(x))
+        x = self.relu(self.conv12(x))
+        x = self.relu(self.conv13(x))
         x = self.maxpool5(x)
 
         x = self.relu(self.fc1(x))
