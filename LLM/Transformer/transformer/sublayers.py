@@ -3,7 +3,7 @@ import math
 import torch
 import torch.nn as nn
 
-class AddNormLayer(nn.Module):
+class NormLayer(nn.Module):
     def __init__(self, features: int, eps=1e-6):
         super().__init__()
         self.eps = eps
@@ -24,10 +24,10 @@ class MultiHeadAttention(nn.Module):
         self.d_k = d_k # d_model // n_head
         self.d_v = d_v # d_model // n_head
 
-        self.w_q = nn.Linear(d_model, n_head * d_k, bias = False)
-        self.w_k = nn.Linear(d_model, n_head * d_k, bias = False)
-        self.w_v = nn.Linear(d_model, n_head * d_v, bias = False)
-        self.w_o = nn.Linear(n_head * d_v, d_model, bias = False)
+        self.w_q = nn.Linear(d_model, n_head*d_k, bias = False)
+        self.w_k = nn.Linear(d_model, n_head*d_k, bias = False)
+        self.w_v = nn.Linear(d_model, n_head*d_v, bias = False)
+        self.w_o = nn.Linear(n_head*d_v, d_model, bias = False)
 
         self.dropout = nn.Dropout(dropout)
 
@@ -75,4 +75,4 @@ class PositionwiseFeedForward(nn.Module):
     
     def forward(self, x):
         # (batch, seq_len, d_model) -> (batch, seq_len, d_ff) -> (batch, seq_len, d_model)
-        return self.Wb2(self.dropout(torch.relu(self.Wb1(x))))
+        return self.dropout(self.Wb2(torch.relu(self.Wb1(x))))

@@ -23,7 +23,7 @@ class InputEmbedding(nn.Module):
 class ResidualConnection(nn.Module):
     def __init__(self, features: int, dropout=0.1):
         super().__init__()
-        self.norm_layer = AddNormLayer(features)
+        self.norm_layer = NormLayer(features)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, sublayer):

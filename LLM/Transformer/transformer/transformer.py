@@ -36,7 +36,7 @@ class Encoder(nn.Module):
     def __init__(self, features: int, layers: nn.ModuleList):
         super().__init__()
         self.layers = layers
-        self.norm_layer = AddNormLayer(features)
+        self.norm_layer = NormLayer(features)
 
     def forward(self, x, mask):
         for layer in self.layers:
@@ -48,7 +48,7 @@ class Decoder(nn.Module):
     def __init__(self, features: int, layers: nn.ModuleList):
         super().__init__()
         self.layers = layers
-        self.norm_layer = AddNormLayer(features)
+        self.norm_layer = NormLayer(features)
 
     def forward(self, x, enc_output, src_mask, tgt_mask):
         for layer in self.layers:
