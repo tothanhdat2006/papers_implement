@@ -68,8 +68,8 @@ class AnchorGenerator(nn.Module):
         if self.cell_anchor is not None:
             return
     
-        sizes = torch.tensor(self.sizes, dtype, device)
-        ratios = torch.tensor(self.ratios, dtype, device)
+        sizes = torch.tensor(self.sizes, dtype=dtype, device=device)
+        ratios = torch.tensor(self.ratios, dtype=dtype, device=device)
 
         h_ratios = torch.sqrt(ratios)
         w_ratios = 1 / h_ratios
@@ -82,15 +82,15 @@ class AnchorGenerator(nn.Module):
     
     def grid_anchor(self, grid_size, stride):
         dtype, device = self.cell_anchor.dtype, self.cell_anchor.device
-        shift_x = torch.arange(0, grid_size[1], dtype, device)
-        shift_y = torch.arange(0, grid_size[0], dtype, device)
+        shift_x = torch.arange(0, grid_size[1], dtype=dtype, device=device) * stride[0]
+        shift_y = torch.arange(0, grid_size[0], dtype=dtype, device=device) * stride[1]
 
         y, x = torch.meshgrid(shift_y, shift_x)
         x = x.reshape(-1)
         y = y.reshape(-1)
         shift = torch.stack((x, y, x, y), dim=1).reshape(-1, 1, 4)
         
-        anchor = (shift + self.cell_anchor).reshape(-1, 1, 4)
+        anchor = (shift + self.cell_anchor).reshape(-1, 4)
         return anchor
     
     def cached_grid_anchor(self, grid_size, stride):

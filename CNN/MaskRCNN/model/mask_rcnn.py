@@ -112,7 +112,7 @@ class MaskRCNN(nn.Module):
         resolution = box_roi_pool.output_size[0]
         in_channels = out_channels * resolution ** 2
         mid_channels = 1024
-        box_predictor = FastRCNNPredictor(in_channels, mid_channels)
+        box_predictor = FastRCNNPredictor(in_channels, mid_channels, n_classes)
 
         self.head = RoIHeads(
             box_roi_pool, box_predictor,
@@ -136,7 +136,7 @@ class MaskRCNN(nn.Module):
         )
     
     def forward(self, image, target=None):
-        image_shape = image.shape[-2:] # (C, H, W)
+        image_shape = image.shape[-2:]
         
         image, target = self.transformer(image, target)
         new_image_shape = image.shape[-2:]
@@ -152,7 +152,7 @@ class MaskRCNN(nn.Module):
             return result
 
 
-def make_maskrcnn(n_classes: int = 1000, pretrained: bool = False, pretrained_backbone: bool = False):
+def make_maskrcnn(n_classes: int = 1000, pretrained: bool = False, pretrained_backbone: bool = True):
     if pretrained:
         pretrained_backbone = False
 

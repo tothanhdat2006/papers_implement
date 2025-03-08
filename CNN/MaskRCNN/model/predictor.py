@@ -26,7 +26,7 @@ class MaskRCNNPredictor(nn.Sequential):
         d = OrderedDict()
         next_feature = in_channels
         for layer_idx, layer_feature in enumerate(layers, 1):
-            d[f'mask_fcn{layer_idx}'] = nn.Conv2d(next_feature)
+            d[f'mask_fcn{layer_idx}'] = nn.Conv2d(next_feature, layer_feature, kernel_size=3, stride=1, padding=1)
             d[f'relu{layer_idx}'] = nn.ReLU(inplace=True)
             next_feature = layer_feature
 

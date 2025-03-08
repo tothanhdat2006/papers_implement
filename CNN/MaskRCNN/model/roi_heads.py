@@ -11,12 +11,13 @@ def fastrcnn_loss(class_logit, box_regression, label, regression_target):
     # Loss = 1/N_cls * L_cls + 1/N_reg * L_reg
     # L_cls = -1/N * sum(log(p_i))
     # L_reg = 1/N * sum(smooth_l1_loss(t_i - t*_i))
+    classifier_loss = F.cross_entropy(class_logit, label)
+    
     N, num_pos = class_logit.shape[0], regression_target.shape[0]
     box_regression = box_regression.reshape(N, -1, 4) # [N, num_pos, 4]
     box_regression, label = box_regression[:num_pos], label[:num_pos]
     box_idx = torch.arange(num_pos, device=label.device)
 
-    classifier_loss = F.cross_entropy(class_logit, label)
     box_reg_loss = F.smooth_l1_loss(box_regression[box_idx, label], regression_target, reduction='sum') / N
     return classifier_loss, box_reg_loss
 
@@ -83,7 +84,7 @@ class RoIHeads(nn.Module):
         pos_idx, neg_idx = self.fg_bg_sampler(pos_neg_label)
         idx = torch.cat((pos_idx, neg_idx))
 
-        regression_target = self.box_coder.encode(gt_box[matched_idx], proposal[pos_idx])
+        regression_target = self.box_coder.encode(gt_box[matched_idx[pos_idx]], proposal[pos_idx])
         proposal = proposal[idx]
         matched_idx = matched_idx[idx]
 

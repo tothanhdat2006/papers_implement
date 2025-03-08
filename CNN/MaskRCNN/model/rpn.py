@@ -94,6 +94,6 @@ class RegionProposalNetwork(nn.Module):
         proposal = self.create_proposal(anchor, objectness.detach(), pred_bbox_delta.detach(), image_shape)
         if self.training:
             objectness_loss, box_loss = self.compute_loss(objectness, pred_bbox_delta, gt_box, anchor)
-            return proposal, objectness_loss, box_loss
+            return proposal, dict(rpn_objectness_loss=objectness_loss, rpn_box_loss=box_loss)
 
         return proposal, {}
