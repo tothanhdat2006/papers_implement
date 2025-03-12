@@ -3,28 +3,31 @@ import torch.nn as nn
 
 from .backbone import build_backbone
 from .transformer import PositionalEncoding, build_transformer
-
+from .FFN import PredictionFFN
 
 class DETR(nn.Module):
     def __init__(self, backbone, transformer, n_classes, n_queries, aux_loss=False):
         super().__init__()
         self.backbone = backbone
         self.conv1x1 = nn.Conv2d(backbone.n_channels, transformer.d_model, kernel_size=1)
-        self.pe = PositionalEncoding(d_model=transformer.d_model, seq_len=transformer.seq_len)
         
+        self.pe = PositionalEncoding(d_model=transformer.d_model, seq_len=transformer.seq_len)
         self.transformer = transformer
 
-        self.linear_cls = nn.Linear(transformer.d_model, n_classes+1)
-        self.linear_bbox = nn.Linear(transformer.d_model, 4)
+        self.prediction_ffn = PredictionFFN(d_model=transformer.d_model, n_bbox=n_queries)
 
-    def forward(self, x):
+    def forward(self, x, obj_queries):
         f = self.backbone(x) # (batch_size, 2048, H, W)
         z0 = self.conv1x1(f) # (batch_size, d_model, H, W)
-        
-        pos = self.pe(z0) # (batch_size, d_model, H, W)
 
-        z0 = z0.flatten(2).permute(2, 0, 1) # (HW, batch_size, d_model)
-        z0 = self.transformer(z0, pos) # (HW, batch_size, d_model)
+        B, C, H, W = z0.shape
+        x = x.view(B, C, -1) # (batch_size, d_model, HW)
+        z0 = self.pe(z0) # (batch_size, d_model, HW)
+        z0 = self.transformer(z0, obj_queries) # (batch_size, d_model, HW)
+        
+        bbox_pred, cls_logits = self.prediction_ffn(z0) # (batch_size, HW, n_bbox), (batch_size, HW, n_classes + 1)
+        cls_pred = torch.softmax(cls_logits, dim=2)
+        return bbox_pred, cls_pred
 
 
 def build_DETR(args):
