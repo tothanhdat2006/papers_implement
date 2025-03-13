@@ -156,7 +156,7 @@ class DecoderLayer(nn.Module):
         self.FFN = FFN(d_model, d_model)
         self.norm3 = ResidualConnection(d_model, dropout)
 
-    def forward(self, x, enc_output, object_queries, src_mask, tgt_mask):
+    def forward(self, x, object_queries, enc_output, src_mask, tgt_mask):
         x = x + object_queries
         x = self.norm1(x, self.self_attn(x, x, x, tgt_mask))
         x = self.norm2(x, self.cross_attn(x, enc_output, enc_output, src_mask))

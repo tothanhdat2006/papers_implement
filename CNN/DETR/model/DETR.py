@@ -4,8 +4,19 @@ import torch.nn as nn
 from .backbone import build_backbone
 from .transformer import PositionalEncoding, build_transformer
 from .FFN import PredictionFFN
-
+    
 class DETR(nn.Module):
+    '''
+    DETR model
+    Args:
+        backbone: backbone model
+        transformer: transformer model
+        n_classes: number of classes
+        n_queries: number of objectqueries (N in the paper)
+        aux_loss: whether to use auxiliary loss
+    
+        
+    '''
     def __init__(self, backbone, transformer, n_classes, n_queries, aux_loss=False):
         super().__init__()
         self.backbone = backbone
@@ -14,7 +25,7 @@ class DETR(nn.Module):
         self.pe = PositionalEncoding(d_model=transformer.d_model, seq_len=transformer.seq_len)
         self.transformer = transformer
 
-        self.prediction_ffn = PredictionFFN(d_model=transformer.d_model, n_bbox=n_queries)
+        self.prediction_ffn = PredictionFFN(d_model=transformer.d_model, n_bbox=n_queries, n_classes=n_classes)
 
     def forward(self, x, obj_queries):
         f = self.backbone(x) # (batch_size, 2048, H, W)

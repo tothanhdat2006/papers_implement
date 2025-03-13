@@ -19,4 +19,5 @@ class CustomDataset(Dataset):
         image = Image.open(image_path).convert("RGB")
         boxes = self.boxes[idx]
         labels = self.labels[idx]
+        
 
