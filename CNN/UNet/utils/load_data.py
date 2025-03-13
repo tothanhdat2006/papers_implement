@@ -23,7 +23,6 @@ def load_image(filename):
         return Image.open(filename)        
 
 def load_mask(idx, dir_masks, mask_suffix):
-    tmp = list(dir_masks.glob(idx + mask_suffix + '.*'))
     mask_file = list(dir_masks.glob(idx + mask_suffix + '.*'))[0]
     mask = np.asarray(load_image(mask_file))
 
@@ -47,7 +46,6 @@ class ImageCustomDataset(Dataset):
         if not self.ids:
             raise RuntimeError(f'No input file found in {dir_images}, make sure you put your images there')
 
-        print(len(self.ids))
         # ???
         logging.info(f'Creating dataset with {len(self.ids)} examples')
         logging.info('Scanning mask files to determine unique values')
