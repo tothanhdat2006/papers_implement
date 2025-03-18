@@ -18,9 +18,9 @@ cfg_channels = {
 }
 
 class BasicBlock(nn.Module):
+    expansion = 1
     def __init__(self, in_channels, out_channels, stride=1):
         super(BasicBlock, self).__init__()
-        self.expansion = 1
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
@@ -39,20 +39,20 @@ class BasicBlock(nn.Module):
         shortcut = X.clone()
 
         X = self.conv1(X)
-        X = self.batch_norm1(X)
+        X = self.bn1(X)
         X = self.relu(X)
 
         X = self.conv2(X)
-        X = self.batch_norm2(X)
+        X = self.bn2(X)
         X += self.downsample(shortcut)
         X = self.relu(X)
         return X
         
 
 class Bottleneck(nn.Module):
+    expansion = 4
     def __init__(self, in_channels, out_channels, stride=1):
         super(Bottleneck, self).__init__()
-        self.expansion = 4
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride)
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
@@ -61,10 +61,10 @@ class Bottleneck(nn.Module):
         self.bn3 = nn.BatchNorm2d(out_channels * self.expansion)
 
         self.downsample = nn.Sequential()
-        if stride != 1 or in_channels != out_channels:
+        if stride != 1 or in_channels != out_channels * self.expansion:
             self.downsample = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride),
-                nn.BatchNorm2d(out_channels)
+                nn.Conv2d(in_channels, out_channels * self.expansion, kernel_size=1, stride=stride),
+                nn.BatchNorm2d(out_channels * self.expansion)
             )
         self.relu = nn.ReLU()
 
@@ -72,15 +72,15 @@ class Bottleneck(nn.Module):
         shortcut = X.clone()
 
         X = self.conv1(X)
-        X = self.batch_norm1(X)
+        X = self.bn1(X)
         X = self.relu(X)
 
         X = self.conv2(X)
-        X = self.batch_norm2(X)
+        X = self.bn2(X)
         X = self.relu(X)
 
         X = self.conv3(X)
-        X = self.batch_norm3(X)
+        X = self.bn3(X)
         X += self.downsample(shortcut)
         X = self.relu(X)
         return X
@@ -94,19 +94,24 @@ class ResNet(nn.Module):
             f'ResNet __init__ error: out_channels_list expected 4 elements, found {len(out_channels_list)} instead\n'
         
         self.features_only = features_only
-        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=7, stride=2, padding=3)
+        self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         self.conv2_x = self.create_layer(residual_block, 64, out_channels_list[0], n_blocks_list[0], 1)
-        self.conv3_x = self.create_layer(residual_block, 128, out_channels_list[1], n_blocks_list[1], 2)
-        self.conv4_x = self.create_layer(residual_block, 256, out_channels_list[2], n_blocks_list[2], 2)
-        self.conv5_x = self.create_layer(residual_block, 512, out_channels_list[3], n_blocks_list[3], 2)
+        self.conv3_x = self.create_layer(residual_block, out_channels_list[0] * residual_block.expansion, out_channels_list[1], n_blocks_list[1], 2)
+        self.conv4_x = self.create_layer(residual_block, out_channels_list[1] * residual_block.expansion, out_channels_list[2], n_blocks_list[2], 2)
+        self.conv5_x = self.create_layer(residual_block, out_channels_list[2] * residual_block.expansion, out_channels_list[3], n_blocks_list[3], 2)
 
-        self.avgpool = nn.AdaptiveAvgPool2d(1)
-        self.flatten = nn.Flatten()
-        self.fc1 = nn.Linear(512 * residual_block.expansion, n_classes)
+        if features_only:
+            self.avgpool = None
+            self.flatten = None
+            self.fc1 = None
+        else:
+            self.avgpool = nn.AdaptiveAvgPool2d(1)
+            self.flatten = nn.Flatten()
+            self.fc1 = nn.Linear(512 * residual_block.expansion, n_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -123,18 +128,16 @@ class ResNet(nn.Module):
         
     def create_layer(self, residual_block, in_channels, out_channels, n_blocks, stride):
         layers = []
-        for i in range(n_blocks):
-            if i == 0:
-                layers.append(residual_block(in_channels, out_channels, stride))
-            else:
-                layers.append(residual_block(out_channels, out_channels))
+        layers.append(residual_block(in_channels, out_channels, stride))
+        for _ in range(1, n_blocks):
+            layers.append(residual_block(out_channels * residual_block.expansion, out_channels))
         return nn.Sequential(*layers)
 
     def forward(self, X):
         X = self.conv1(X)
-        X = self.batch_norm1(X)
-        X = self.maxpool(X)
+        X = self.bn1(X)
         X = self.relu(X)
+        X = self.maxpool(X)
 
         X = self.conv2_x(X)
         X = self.conv3_x(X)
