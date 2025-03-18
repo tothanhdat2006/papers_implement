@@ -1,6 +1,7 @@
 import math
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 def get_seq_len(x):
     if x.ndim == 2:
@@ -56,21 +57,21 @@ class MultiHeadSelfAttention(nn.Module):
 
     def _scaled_dot_product_attention(self, q, k, v, dropout=0.0):
         score = (q @ k.transpose(-2, -1)) / math.sqrt(self.d_k)
-        score = torch.softmax(score, dim=-1)
+        score = F.softmax(score, dim=-1)
         score = score @ v
         if dropout > 0.0:
-            score = dropout(score)
+            score = F.dropout(score, p=dropout)
         return score
     
     def _proj(self, q, k, v):
         d_model = q.shape[-1]
-        w = self.proj_w        
-        b = self.proj_b
+        w = self.in_proj_w        
+        b = self.in_proj_b
 
         if q is k:
             # Self-attention
-            q, k, v = torch.linear(q, w, b).chunk(3, dim=-1)
-            return q, k, v
+            q, k, v = F.linear(q, w, b).chunk(3, dim=-1)
+            return [q, k, v]
         else:
             # Cross-attention
             w_q, w_kv = w.split([d_model, 2 * d_model])
@@ -79,19 +80,19 @@ class MultiHeadSelfAttention(nn.Module):
             else:
                 b_q, b_kv = b.split([d_model, 2 * d_model])
             
-            q = torch.linear(q, w_q, b_q)
-            k, v = torch.linear(k, w_kv, b_kv).chunk(2, dim=-1)
-            return q, k, v
+            q = F.linear(q, w_q, b_q)
+            k, v = F.linear(k, w_kv, b_kv).chunk(2, dim=-1)
+            return [q, k, v]
 
-    def out_proj(self, attn_out):
-        return torch.linear(attn_out, self.out_proj_w, self.out_proj_b)
+    def _out_proj(self, attn_out):
+        return F.linear(attn_out, self.out_proj.weight, self.out_proj.bias)
 
     def forward(self, q, k, v):
         '''
         Args:
             q = (n_queries, batch_size, d_model)
-            k = (n_queries, batch_size, d_model)
-            v = (n_queries, batch_size, d_model)
+            k = (n_keys, batch_size, d_model)
+            v = (n_keys, batch_size, d_model)
         
         Returns:
             out = (n_queries, batch_size, d_model)
@@ -100,12 +101,12 @@ class MultiHeadSelfAttention(nn.Module):
 
         q, k, v = self._proj(q, k, v)
         q = q.contiguous().view(n_queries, batch_size * self.n_heads, self.d_k).transpose(0, 1)
-        k = k.contiguous().view(n_queries, batch_size * self.n_heads, self.d_k).transpose(0, 1)
-        v = v.contiguous().view(n_queries, batch_size * self.n_heads, self.d_v).transpose(0, 1)
+        k = k.contiguous().view(k.shape[0], batch_size * self.n_heads, self.d_k).transpose(0, 1)
+        v = v.contiguous().view(v.shape[0], batch_size * self.n_heads, self.d_v).transpose(0, 1)
 
         attn_out = self._scaled_dot_product_attention(q, k, v, dropout=self.dropout)
         attn_out = attn_out.transpose(0, 1).contiguous().view(n_queries * batch_size, d_model)
-        out = self.out_proj(attn_out)
+        out = self._out_proj(attn_out)
         out = out.view(n_queries, batch_size, d_model)
         return out
                          
@@ -132,9 +133,9 @@ class EncoderLayer(nn.Module):
         self.norm1 = ResidualConnection(d_model, dropout)
         self.norm2 = ResidualConnection(d_model, dropout)
 
-    def forward(self, x, mask=None):
-        x = self.norm1(x, self.attn(x, x, x, mask))
-        x = self.norm2(x, self.FFN(x))
+    def forward(self, x):
+        x = self.norm1(x, lambda x: self.attn(x, x, x))
+        x = self.norm2(x, self.FFN)
         return x
 
 
@@ -148,12 +149,11 @@ class DecoderLayer(nn.Module):
         self.norm2 = ResidualConnection(d_model, dropout)
         self.norm3 = ResidualConnection(d_model, dropout)
 
-    def forward(self, x, object_queries, enc_output, src_mask, tgt_mask):
-        x = x + object_queries
-        x = self.norm1(x, self.self_attn(x, x, x, tgt_mask))
-        x = self.norm2(x, self.cross_attn(x, enc_output, enc_output, src_mask))
-        x = self.norm3(x, self.FFN(x))
-        return x
+    def forward(self, object_queries, enc_output):
+        object_queries = self.norm1(object_queries, lambda x: self.self_attn(x, x, x))
+        object_queries = self.norm2(object_queries, lambda x: self.cross_attn(x, enc_output, enc_output))
+        object_queries = self.norm3(object_queries, self.FFN)
+        return object_queries
     
 
 class Encoder(nn.Module):
@@ -163,9 +163,9 @@ class Encoder(nn.Module):
                                      for _ in range(n_enc_layers)])
         self.norm = NormLayer(d_model)
 
-    def forward(self, x, mask=None):
+    def forward(self, x):
         for layer in self.layers:
-            x = layer(x, mask)
+            x = layer(x)
         return self.norm(x)
     
 
@@ -176,10 +176,10 @@ class Decoder(nn.Module):
                                      for _ in range(n_dec_layers)])
         self.norm = NormLayer(d_model)
 
-    def forward(self, object_queries, enc_output, src_mask, tgt_mask):
+    def forward(self, object_queries, enc_output):
         for layer in self.layers:
-            x = layer(object_queries, enc_output, src_mask, tgt_mask)
-        return self.norm(x)
+            object_queries = layer(object_queries, enc_output)
+        return self.norm(object_queries)
     
 
 class Transformer(nn.Module):

@@ -25,7 +25,8 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False)
+        pe = self.pe.to(x.device)
+        x = x + (pe[:, :x.shape[1], :]).requires_grad_(False)
         return self.dropout(x)
 
 class DETR(nn.Module):
@@ -40,10 +41,10 @@ class DETR(nn.Module):
     
         
     '''
-    def __init__(self, backbone, transformer, n_classes, n_queries=100, in_channels=3, d_model=256):
+    def __init__(self, backbone, transformer, n_classes, n_queries=100, d_model=256):
         super().__init__()
         self.backbone = backbone
-        self.conv1x1 = nn.Conv2d(2048, d_model, kernel_size=1)
+        self.conv1x1 = nn.Conv2d(4096, d_model, kernel_size=1)
         
         self.d_model = d_model
         self.query_embed = nn.Embedding(n_queries, d_model) # (n_queries, d_model)
@@ -56,7 +57,7 @@ class DETR(nn.Module):
         z0 = self.conv1x1(f) # (batch_size, d_model, H, W)
 
         B, C, H, W = z0.shape # seq_len = HW
-        z0 = z0.view(-1, B, C) # (HW, batch_size, d_model)
+        z0 = z0.flatten(2).permute(2, 0, 1) # (HW, batch_size, d_model)
         pos_embed = PositionalEncoding(self.d_model, H * W, dropout=0.1) # (HW, batch_size, d_model) 
         pos_embed_z0 = pos_embed(z0)
         query_embed = self.query_embed.weight.unsqueeze(0).repeat(B, 1, 1) # (batch_size, n_queries, d_model)
