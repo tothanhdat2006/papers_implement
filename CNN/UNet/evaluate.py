@@ -5,13 +5,6 @@ from tqdm import tqdm
 from utils.dice_score import multiclass_dice_coeff, dice_coeff
 
 @torch.inference_mode()
-import torch
-import torch.nn.functional as F
-from tqdm import tqdm
-
-from utils.dice_score import multiclass_dice_coeff, dice_coeff
-
-@torch.inference_mode()
 def evaluate(model, dataloader, device, amp):
     model.eval()
     num_val_batches = len(dataloader)
